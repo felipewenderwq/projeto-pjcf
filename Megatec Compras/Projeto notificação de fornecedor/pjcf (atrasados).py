@@ -63,7 +63,9 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
             <th>Código Fornecedor</th>
             <th>Pedido</th>
             <th>Filial</th>
+            <th>Data Emissão</th>
             <th>Produto</th>
+            <th>Item</th>
             <th>Descrição</th>
             <th>Quantidade</th>
             <th>Qtd Entregue</th>
@@ -83,7 +85,9 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
             <td>{row.get('C.Prod Forne', '')}</td>
             <td>{numero}</td>
             <td>{row.get('Filial', '')}</td>
+            <td>{row['Data Emissao'].strftime('%d/%m/%Y') if pd.notna(row.get('Prev Entrega')) else ''}</td>
             <td>{row.get('Produto', '')}</td>
+            <td>{row.get('Item', '')}</td>
             <td>{row.get('Desc Interna', '')}</td>
             <td>{row.get('Quantidade', '')}</td>
             <td>{row.get('Qtd.Entregue', '')}</td>
@@ -95,13 +99,14 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
         """
 
     loja = int(dados["Loja"].iloc[0])
+    fornecedor_c = int(dados["Fornecedor"].iloc[0])
 
     tabela_html += "</table>"
 
 # Corpo em HTML
 
     corpo_html = f"""
-    <p>Prezado {fornecedor}, Loja {loja}</p>
+    <p>Prezado {fornecedor} - {fornecedor_c}, Loja {loja}</p>
     <p>Identificamos que existem pedidos em atraso conforme resumo abaixo:</p>
     <ul>
         <li>Total de itens: {total_pedidos}</li>
@@ -128,7 +133,7 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
     mail.Subject = f"{nome_filial} | Notificação de pedidos em atraso – {fornecedor} – {datetime.today().strftime('%d/%m/%Y')}"
     mail.HTMLBody = corpo_html
 
-    mail.Send()  
+    mail.Save()  
 
 print("✅ E-mails preparados com sucesso!")
 
