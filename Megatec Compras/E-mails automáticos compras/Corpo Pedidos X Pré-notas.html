@@ -1,0 +1,9 @@
+mail.Display()   # <--- Corpo do e-mail (HTML)
+    
+    corpo = """
+    <p><b>Bom dia!</b></p>
+    <p>Segue relatório para auxílio do estoque.</p>
+    <p>Atenciosamente,</p>
+    """
+    
+    mail.HTMLBody = corpo + mail.HTMLBody

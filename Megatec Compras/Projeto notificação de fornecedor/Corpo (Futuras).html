@@ -1,0 +1,49 @@
+    tabela_html = """
+    <table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse; font-family: Arial; font-size: 12px;">
+        <tr style="background-color: #f2f2f2;">
+            <th>Código Fornecedor</th>
+            <th>Pedido</th>
+            <th>Filial</th>
+            <th>Produto</th>
+            <th>Descrição</th>
+            <th>Quantidade</th>
+            <th>Unidade De Med.</th>
+            <th>Data Prevista</th>
+            <th>Dias em atraso</th>
+        </tr>
+    """
+    for _, row in dados.iterrows():
+        numero = row.get('Numero', '')
+        if pd.isna(numero):
+            numero = "nan"
+
+        tabela_html += f"""
+        <tr>
+            <td>{row.get('C.Prod Forne', '')}</td>
+            <td>{numero}</td>
+            <td>{row.get('Filial', '')}</td>
+            <td>{row.get('Produto', '')}</td>
+            <td>{row.get('Desc Interna', '')}</td>
+            <td>{row.get('Quantidade', '')}</td>
+            <td>{row.get('Unidade', '')}</td>
+            <td>{row['Prev Entrega'].strftime('%d/%m/%Y') if pd.notna(row.get('Prev Entrega')) else ''}</td>
+            <td>{row.get('Data em atraso', '')}</td>
+        </tr>
+        """
+    tabela_html += "</table>"
+
+# Corpo em HTML
+
+    corpo_html = f"""
+    <p>Prezado {fornecedor},</p>
+    <p>Identificamos que existem pedidos em atraso conforme resumo abaixo:</p>
+    <ul>
+        <li>Total de itens: {total_pedidos}</li>
+        <li>Atraso médio: {atraso_medio:.0f} dias</li>
+        <li>Maior atraso: {maior_atraso} dias</li>
+    </ul>
+    {tabela_html}
+    <p>Pedimos sua manifestação sobre estes atrasos até <b>{data_limite.strftime('%d/%m/%Y')}</b>.</p> 
+    <p>Atenciosamente,<br>
+    <b>Equipe de Compras - {nome_filial}</b></p>
+    """
