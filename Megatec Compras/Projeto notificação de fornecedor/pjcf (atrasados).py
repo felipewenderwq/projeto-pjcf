@@ -16,7 +16,11 @@ vendedores_dict = vendedores_df.groupby("Usuarios.2")["e-mails.2"].apply(list).t
 df_filtrado = df[df["Data em atraso"] >= 3]
 df_filtrado = df_filtrado[df_filtrado["Pre-Notas"].isna() & df_filtrado["Pre-Notas2"].isna()]
 
-outlook = win32.Dispatch("outlook.application")
+outlook = win32.Dispatch("Outlook.Application")
+namespace = outlook.GetNamespace("MAPI")
+
+# Pasta de rascunhos
+pasta_rascunhos = namespace.GetDefaultFolder(16)  # 16 = drafts
 
 data_limite = datetime.today() + timedelta(days=3)
 
@@ -55,11 +59,9 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
     atraso_medio = int(dados["Data em atraso"].mean())
     maior_atraso = int(dados["Data em atraso"].max())
 
-# Tabela em HTML
-
     tabela_html = """
     <table border="2" cellspacing="0" cellpadding="5" style="border-collapse: collapse; font-family: Arial; font-size: 12px;">
-        <tr style="background-color: #001CFF;">
+    <tr style="background-color: #001CFF; color: white;">
             <th>Código Fornecedor</th>
             <th>Pedido</th>
             <th>Filial</th>
@@ -76,18 +78,18 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
         </tr>
     """
     for _, row in dados.iterrows():
-        numero = row.get('Numero', '')
-        if pd.isna(numero):
-            numero = "nan"
+        numero = str(row.get('Numero', '')).split('.')[0].zfill(6)
+        if numero.lower() == "nan":
+            numero = ""
 
         tabela_html += f"""
         <tr>
             <td>{row.get('C.Prod Forne', '')}</td>
             <td>{numero}</td>
             <td>{row.get('Filial', '')}</td>
-            <td>{row['Data Emissao'].strftime('%d/%m/%Y') if pd.notna(row.get('Prev Entrega')) else ''}</td>
+            <td>{row['Data Emissao'].strftime('%d/%m/%Y') if pd.notna(row.get('Data Emissao')) else ''}</td>
             <td>{row.get('Produto', '')}</td>
-            <td>{row.get('Item', '')}</td>
+            <td>{str(row.get('Item', '')).split('.')[0].zfill(4)}</td>
             <td>{row.get('Desc Interna', '')}</td>
             <td>{row.get('Quantidade', '')}</td>
             <td>{row.get('Qtd.Entregue', '')}</td>
@@ -98,13 +100,12 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
         </tr>
         """
 
-    loja = int(dados["Loja"].iloc[0])
-    fornecedor_c = int(dados["Fornecedor"].iloc[0])
-
     tabela_html += "</table>"
 
-# Corpo em HTML
+    loja = int(dados["Loja"].iloc[0])
+    fornecedor_c = str(dados["Fornecedor"].iloc[0]).split('.')[0].zfill(6)
 
+    # === CORPO DO E-MAIL ===
     corpo_html = f"""
     <p>Prezado {fornecedor} - {fornecedor_c}, Loja {loja}</p>
     <p>Identificamos que existem pedidos em atraso conforme resumo abaixo:</p>
@@ -114,11 +115,12 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
         <li>Maior atraso: {maior_atraso} dias</li>
     </ul>
     {tabela_html}
-    <p>Pedimos sua manifestação sobre estes atrasos até 3 dias úteis.<p> 
+    <p>Pedimos sua manifestação sobre estes atrasos até 3 dias úteis.</p>
     <p>Atenciosamente,<br>
     <b>Equipe de Compras - {nome_filial}</b></p>
     """
 
+    # Cria e-mail e salva no rascunho
     mail = outlook.CreateItem(0)
     mail.To = email_fornecedor
 
@@ -133,9 +135,9 @@ for fornecedor, dados in df_filtrado.groupby("Nome Fornec"):
     mail.Subject = f"{nome_filial} | Notificação de pedidos em atraso – {fornecedor} – {datetime.today().strftime('%d/%m/%Y')}"
     mail.HTMLBody = corpo_html
 
-    mail.Save()  
+    mail.Send()
 
-print("✅ E-mails preparados com sucesso!")
+    print("✅ Todos os e-mails foram salvos no Outlook (Rascunhos).")
 
 # Made By Felipe Wender
 # Jesus Love You!
